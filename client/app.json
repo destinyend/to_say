@@ -1,0 +1,11 @@
+{
+  "expo": {
+    "name": "to_say",
+    "slug": "to_say",
+    "version": "1.0.0",
+    "icon": "./assets/favicon.png",
+    "assetBundlePatterns": [
+      "**/*"
+    ]
+  }
+}
