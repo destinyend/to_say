@@ -30,7 +30,6 @@ export const Header = () => {
             <FlexRow style={[jEnd, fCenter]} visible={Boolean(user)}>
                 <Edit/>
                 <MyDesks currentScreen={currentScreen}/>
-                <Library currentScreen={currentScreen}/>
                 <Logout/>
             </FlexRow>
         </Row>
@@ -78,16 +77,6 @@ const Edit = () => {
         style={mr1}
         title={'добавить'}
         onPress={setAddCardMode}
-    />
-}
-
-function Library({currentScreen}) {
-    const {navigation} = useContext(AppContext)
-    return <Btn
-        visible={currentScreen !== 'Library'}
-        style={mr1}
-        title={'библиотека'}
-        onPress={() => navigation.navigate('Library')}
     />
 }
 

@@ -1,8 +1,8 @@
 import {View} from "react-native";
 import {appSlice, teacherState, useAppDispatch, useAppSelector} from "../../store/app";
 import {EDate} from "../../../lib/sugar";
-import {Row} from "../../../lib/markup/markup";
-import {fixHeight, fixWidth, flex1, jBetween, jEnd, ml2, mv1, secondary} from "../../../const";
+import {Flex, Row} from "../../../lib/markup/markup";
+import {bgDanger, fixHeight, fixWidth, flex1, jBetween, jEnd, ml2, mv1, secondary} from "../../../const";
 import BtnSecondary from "../../../lib/buttons/BtnSecondary";
 import BtnPrimary from "../../../lib/buttons/BtnPrimary";
 import {cardsSlice, createLearningProgress} from "../../store/cards";
@@ -74,9 +74,9 @@ export default function ({card}) {
         dispatch(userSlice.actions.patch({id: user.id, learning_speed: learningSpeed}))
     }
 
-    return <Row style={[fixHeight(60), jEnd]}>
+    return <Row style={[fixHeight(70)]}>
         {teacher === teacherState.answer ?
-            <View>
+            <Flex>
                 <Row style={[fixWidth(300), mv1]}>
                     <TextMain>период повтора:</TextMain>
                     <Slider
@@ -105,7 +105,7 @@ export default function ({card}) {
                         return <BtnSecondary {...props}/>
                     })}
                 </Row>
-            </View>
+            </Flex>
             :
             <BtnPrimary
                 style={flex1}

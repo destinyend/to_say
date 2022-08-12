@@ -5,11 +5,6 @@ from rest_framework import status
 from rest_framework.test import APIClient
 from server.models import User
 
-MESSAGE_403 = "{'detail': ErrorDetail(string='You do not have permission to perform this action.'," \
-              " code='permission_denied')}"
-MESSAGE_401 = "{'detail': ErrorDetail(string='Authentication credentials were not provided.', " \
-              "code='not_authenticated')}"
-
 
 class BaseTest(TestCase, ABC):
     """

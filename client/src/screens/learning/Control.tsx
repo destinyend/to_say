@@ -38,7 +38,7 @@ export default function () {
         return {label: desk.name, value: desk.id}
     })
 
-    items.unshift({label: 'учить всё', value: -1})
+    // items.unshift({label: 'учить всё', value: -1}) доработать
     return <Row style={jBetween}>
         <Row>
             <TextMain>{cardsToStudyCurrent}/{cardsToStudyInitial}</TextMain>

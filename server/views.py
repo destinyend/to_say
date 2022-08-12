@@ -144,7 +144,7 @@ class DesksView(GenericViewSet, DestroyModelMixin, UpdateModelMixin):
         WHERE name LIKE %s AND (owner_id=%s OR access=%s) 
         ORDER BY name LIMIT 100
         '''
-        data = db(sql, (text + '%', request.user.id, Desk.AccessChoice.PUBLIC))
+        data = db(sql, ('%' + text + '%', request.user.id, Desk.AccessChoice.PUBLIC))
         return Response(data, status=status.HTTP_200_OK)
 
     @action(['PATCH'], detail=True)

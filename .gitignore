@@ -15,3 +15,5 @@ deployment
 .expo
 android
 ios
+problems_client.txt
+problems_server.txt

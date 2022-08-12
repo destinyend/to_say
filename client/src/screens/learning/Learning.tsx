@@ -1,8 +1,8 @@
 import {useContext, useEffect} from "react"
 import {appSlice, teacherState, useAppDispatch, useAppSelector} from "../../store/app";
-import {Flex} from "../../../lib/markup/markup";
+import {Col, Flex} from "../../../lib/markup/markup";
 import Loading from "../../../lib/static/Loading";
-import {ph2} from "../../../const";
+import {fixHeight, isDesktop, ph2} from "../../../const";
 import Control from "./Control";
 import {cardsLoad, cardsSlice} from "../../store/cards";
 import {EDate, randInt} from "../../../lib/sugar";

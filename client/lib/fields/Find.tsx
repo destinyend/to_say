@@ -27,7 +27,7 @@ export default function ({
     const [text, setText] = useState('')
 
     function find() {
-        if (text.length > 2) onPress(text.trim())
+        if (text.length > 0) onPress(text.trim())
         setText('')
     }
 

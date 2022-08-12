@@ -32,11 +32,13 @@ import FadingText from "../../../lib/text/FadingText";
 import {H3} from "../../../lib/text/H";
 import {cardsSlice} from "../../store/cards";
 import TextMain from "../../../lib/text/TextMain";
+import BtnSecondary from "../../../lib/buttons/BtnSecondary";
+import {navigationSlice} from "../../store/navigation";
 
 export default function () {
     const nameRef = useRef()
     const descriptionRef = useRef()
-    const {setAlert, getCurrentDesk} = useContext(AppContext)
+    const {setAlert, getCurrentDesk, navigation} = useContext(AppContext)
     const {editor} = useAppSelector(state => state.app)
     const {status, isCreating, isDeleting, statusMessage} = useAppSelector(state => state.desks)
     const dispatch = useAppDispatch()
@@ -100,6 +102,12 @@ export default function () {
         delete state.id
         dispatch(deskCreate(state))
         updateState(initialState)
+    }
+
+    function study() {
+        if (!desk.is_learning) dispatch(desksSlice.actions.setIsLearning({id: desk.id, is_learning: true}))
+        dispatch(appSlice.actions.editorClose())
+        navigation.navigate('Learning')
     }
 
     if (isDeleting) return <H3>удаление...</H3>
@@ -167,12 +175,20 @@ export default function () {
                 onBlur={() => patchDesk('description', state.description)}
             />
         </Col>
-        <BtnPrimary
-            visible={editor === editorState.editDesk && editable}
-            title={'добавить карточку'}
-            style={mv1}
-            onPress={setEditorModeAddCard}
-        />
+        <Row style={[mv1, jBetween]}>
+            <BtnPrimary
+                title={'учить!'}
+                style={mv1}
+                onPress={study}
+            />
+            <BtnSecondary
+                visible={editor === editorState.editDesk && editable}
+                title={'добавить карточку'}
+                style={mv1}
+                onPress={setEditorModeAddCard}
+            />
+        </Row>
+
         {[editorState.editDesk, editorState.foundDesk].includes(editor) ? <CardsInDesk/> : null}
         <Row style={[jEnd, mt2]}>
             <FadingText text={message} style={mr2}/>
