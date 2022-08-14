@@ -1,21 +1,12 @@
-import os
-import threading
-
-from django.db import connection
-from django.db.models import Q
-from gtts import gTTS
 from google_trans_new import google_translator
-from django.conf.global_settings import EMAIL_HOST_USER
-from django.core.mail import send_mail
-from django.template.loader import render_to_string
+from rest_framework.decorators import action
+from rest_framework.viewsets import GenericViewSet, ViewSet
 from rest_framework_simplejwt.views import TokenObtainPairView
 from server.db import db
 from server.tasks import voice_acting, send_code_email
-from to_say.settings import BASE_DIR
 from server.permissions import *
 from server.serializers import *
 from server.validators import UsernameValidator
-from server.viewsets import *
 from rest_framework.mixins import *
 
 
@@ -24,7 +15,7 @@ class UserLogin(TokenObtainPairView):
     serializer_class = UserLoginSerializer
 
 
-class UsersView(ModelViewSet):
+class UsersView(GenericViewSet, UpdateModelMixin):
     serializer_class = UserSerializer
     queryset = User.objects.exclude(status=User.StatusChoice.BANNED).only(*UserSerializer.Meta.fields)
 
@@ -32,7 +23,7 @@ class UsersView(ModelViewSet):
         if self.action in ('request_password',):
             permission_classes = (AllowAny,)
         elif self.action in ('self', 'update', 'partial_update'):
-            permission_classes = (IsAuthenticated & SelfOnly,)
+            permission_classes = (IsActiveUser & SelfOnly,)
         else:
             permission_classes = (IsAdminUser,)
         return (permission() for permission in permission_classes)
@@ -68,7 +59,7 @@ class UsersView(ModelViewSet):
         )
 
 
-class DesksView(GenericViewSet, DestroyModelMixin, UpdateModelMixin):
+class DesksView(GenericViewSet, CreateModelMixin, DestroyModelMixin, UpdateModelMixin):
     serializer_class = DeskSerializer
     queryset = Desk.objects.all()
 
@@ -130,6 +121,8 @@ class DesksView(GenericViewSet, DestroyModelMixin, UpdateModelMixin):
         if not text:
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
+
+        #  доработать, убрать потенциальную sqli, тест падает
         sql = '''
         SELECT DISTINCT 
         desks.id AS id , 
@@ -179,7 +172,7 @@ class DesksView(GenericViewSet, DestroyModelMixin, UpdateModelMixin):
         )
 
 
-class CardsView(ModelViewSet):
+class CardsView(GenericViewSet, CreateModelMixin, DestroyModelMixin, UpdateModelMixin):
     serializer_class = CardSerializer
     queryset = Card.objects.all().only(*CardSerializer.Meta.fields)
 
@@ -268,7 +261,7 @@ class CardsView(ModelViewSet):
         )
 
 
-class LearningProgressesView(ModelViewSet):
+class LearningProgressesView(GenericViewSet, UpdateModelMixin, CreateModelMixin):
     serializer_class = LearningProgressSerializer
     queryset = LearningProgress.objects.all()
     permission_classes = (IsActiveUser & IsLearningProgressOwner,)
@@ -295,5 +288,4 @@ class TranslatorView(ViewSet):
             return Response({"result": translate_text}, status=status.HTTP_201_CREATED)
         except Exception as e:
             print(e)
-            return Response({"result": str(e)}, status=status.HTTP_201_CREATED)
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)

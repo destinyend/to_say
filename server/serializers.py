@@ -18,7 +18,6 @@ class UserLoginSerializer(TokenObtainPairSerializer):
 
     def validate(self, attrs):
         data = super().validate(attrs)
-        # refresh = self.get_token(self.user)
         self._set_password()
         return data
 

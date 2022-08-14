@@ -22,6 +22,8 @@ class User(AbstractUser):
     class StatusChoice(TextChoices):
         ACTIVE = 'a'
         BANNED = 'b'
+        SUPERUSER = 's'
+        MODERATOR = 'm'
 
     class LearningMode(TextChoices):
         EN_AND_RU = 'en+ru'
@@ -99,6 +101,9 @@ class Desk(Model):
     class Meta:
         ordering = ('name',)
         db_table = 'desks'
+
+    def __str__(self):
+        return f'{self.id} {self.owner} {self.name}'
 
 
 class Card(Model):

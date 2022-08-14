@@ -1,219 +1,116 @@
-# import os.path
-# import secrets
-# import string
-# from random import randint
-# from unittest.mock import patch
-#
-# from django.db.models import Q
-# from server.models import Desk, Card
-# from server.tests.base import *
-# from server.tests.test_models import UserBaseTest
-# from server.views import DesksView
-#
-#
-# class UsersViewTest(UserBaseTest, BaseViewsTest, UnauthorizedTestMixin, TabooMethodsTestMixin):
-#     def __init__(self, *args, **kwargs):
-#         super(UsersViewTest, self).__init__(*args, **kwargs)
-#         self.uri = '/users/'
-#         self.taboo_methods = ('get', 'post', 'delete')
-#
-#     def test_self(self):
-#         """Получение данных о самом себе"""
-#         for user_template in self.user_templates:
-#             self.user = User.objects.get(username=user_template['username'])
-#             response = self.user.get(self.uri + 'self/')
-#             self.assertEqual(response.status_code, status.HTTP_200_OK)
-#             self.assertDictContainsSubset(response.data, user_template)
-#
-#
-# def generate_name():
-#     alphabet = string.ascii_letters + string.digits + 'абвгдеёжзийклмнопрстуфхцчшщъыьэюя' + ' ' * 10
-#     name = ''
-#     for _ in range(randint(5, 20)):
-#         if randint(0, 1):
-#             name += secrets.choice(alphabet).upper()
-#         else:
-#             name += secrets.choice(alphabet)
-#     return name
-#
-#
-# class DesksViewTest(BaseViewsTest, UnauthorizedTestMixin, TabooMethodsTestMixin):
-#     def __init__(self, *args, **kwargs):
-#         super(DesksViewTest, self).__init__(*args, **kwargs)
-#         self.uri = '/desks/'
-#         self.taboo_methods = ('get',)
-#
-#     def setUp(self):
-#         users = UsersViewTest()
-#         users.setUp()
-#         self.user_templates = users.user_templates
-#         self.desk_templates = self.generate_params({
-#             'owner': (
-#                 None,
-#                 User.objects.filter(status=User.StatusChoice.ACTIVE)[0],
-#                 User.objects.filter(status=User.StatusChoice.BANNED)[0],
-#             ),
-#             'description': ('', 'some text'),
-#             'access': (Desk.AccessChoice.PUBLIC, Desk.AccessChoice.PRIVATE)
-#         })
-#
-#         for n in range(len(self.desk_templates)):
-#             self.desk_templates[n]['name'] = generate_name().strip()
-#             self.desk_templates[n]['id'] = n + 1
-#
-#         self.desk_templates[1]['name'] = self.desk_templates[0]['name'][:4]
-#
-#         users = User.objects.all()
-#         for desk in self.desk_templates:
-#             d = Desk.objects.create(**desk)
-#             for _ in range(randint(0, len(users) - 1)):
-#                 n = randint(0, len(users) - 1)
-#                 d.users.add(users[n])
-#
-#     def test_download_available_desks(self):
-#         """Получение изучаемых колод"""
-#         for user_template in self.user_templates:
-#             self.user = User.objects.get(id=user_template['id'])
-#             response = self.user.get(self.uri + 'download_available_desks/')
-#             if user_template['status'] == User.StatusChoice.ACTIVE:
-#                 self.assertEqual(response.status_code, status.HTTP_200_OK)
-#                 expected = Desk.objects.filter(
-#                     Q(users__id=self.user.id, access=Desk.AccessChoice.PUBLIC) | Q(owner_id=self.user.id)
-#                 ).distinct()
-#                 self.assertEqual(len(response.data), expected.count())
-#             else:
-#                 self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-#
-#     def test_find(self):
-#         """Поиск колод по имени"""
-#         for user_template in self.user_templates:
-#             self.user = User.objects.get(id=user_template['id'])
-#             index = randint(0, len(self.desk_templates) - 1)
-#             text = self.desk_templates[index]['name'][:-3]
-#             response = self.user.get(self.uri + 'find/', {'name': text})  # проверка на неверный параметр
-#             if user_template['status'] == User.StatusChoice.ACTIVE:
-#                 self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-#
-#                 response = self.user.get(self.uri + 'find/', {'text': ''})  # проверка на пустой запрос
-#                 self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-#
-#                 response = self.user.get(self.uri + 'find/', {'text': text})  # правильный запрос
-#                 self.assertEqual(response.status_code, status.HTTP_200_OK)
-#                 count = Desk.objects.filter(
-#                     Q(name__istartswith=text) &
-#                     Q(Q(owner__id=user_template['id']) | Q(access=Desk.AccessChoice.PUBLIC))
-#                 ).distinct().count()
-#                 self.assertEqual(len(response.data), count)
-#
-#                 response = self.user.get(self.uri + 'find/', {'text': text.upper()})
-#                 self.assertEqual(response.status_code, status.HTTP_200_OK)
-#                 self.assertEqual(len(response.data), count)
-#             else:
-#                 self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-#
-#     def test_create(self):
-#         for user_template in self.user_templates:
-#             self.user = User.objects.get(id=user_template['id'])
-#             args = {
-#                 'name': 'test',
-#                 'description': '',
-#                 'access': 'public',
-#                 'is_learning': randint(0, 1)
-#             }
-#             response = self.user.post(self.uri, args)
-#
-#             if user_template['status'] == User.StatusChoice.ACTIVE:
-#                 self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-#
-#                 exists = Desk.objects.filter(id=response.data['id'], owner__id=self.user.id).exists()
-#                 self.assertTrue(exists)  # есть ли права на колоду
-#                 # попытка создать колоду без имени
-#                 args['name'] = ''
-#                 response = self.user.post(self.uri, args)
-#                 self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-#             else:
-#                 self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-#
-#     def test_patch(self):
-#         for user_template in self.user_templates[:8]:
-#             self.user = User.objects.get(id=user_template['id'])
-#             for d in Desk.objects.all():
-#                 response = self.user.patch(self.uri + f'{d.id}/', {'name': 'test'})
-#                 if user_template['status'] == User.StatusChoice.ACTIVE:
-#                     if d.owner and d.owner.id == self.user.id:
-#                         self.assertEqual(response.status_code, status.HTTP_200_OK)
-#                         response = self.user.patch(self.uri + f'{d.id}/', {'name': ''})
-#                         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-#                     else:
-#                         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-#                 else:
-#                     self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-#
-#     def test_delete(self):
-#         for user_template in self.user_templates[:8]:
-#             self.user = User.objects.get(id=user_template['id'])
-#             for d in Desk.objects.all():
-#                 response = self.user.delete(self.uri + f'{d.id}/')
-#                 if user_template['status'] == User.StatusChoice.ACTIVE:
-#                     if d.owner and d.owner.id == self.user.id:
-#                         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-#                     else:
-#                         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-#                 else:
-#                     self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-#
-#
-# class CardsViewTest(BaseViewsTest, UnauthorizedTestMixin):
-#     def __init__(self, *args, **kwargs):
-#         super(CardsViewTest, self).__init__(*args, **kwargs)
-#         self.uri = '/cards/'
-#
-#     def setUp(self):
-#         desks = DesksViewTest()
-#         desks.setUp()
-#         self.user_templates = desks.user_templates
-#         self.desk_templates = desks.desk_templates
-#         self.card_templates = self.generate_params({
-#             'desk': ([d for d in Desk.objects.all()[:8]]),
-#             'side_one': ('question 1', 'question 2', 'question 3', 'question 4', 'question 5', 'question 6'),
-#             'side_two': ('ответ 1', 'ответ 2', 'ответ 3', 'ответ 4', 'ответ 5', 'ответ 6')
-#         })
-#
-#         for card in self.card_templates:
-#             Card.objects.create(**card)
-#
-#     def test_load_cards_in_desks(self):
-#         """Загрузка карт по массиву id колод"""
-#         for user_template in self.user_templates[:1]:
-#             self.user = User.objects.get(id=user_template['id'])
-#             desks = Desk.objects.all()[:4]
-#             ides = ','.join(str(d.id) for d in desks)
-#             response = self.user.get(self.uri + 'load_cards_in_desks/', {'ides': ides})
-#             if user_template['status'] == User.StatusChoice.ACTIVE:
-#                 self.assertEqual(response.status_code, status.HTTP_200_OK)
-#                 expected = 0
-#                 for d in desks:
-#                     expected += d.cards.all().count()
-#
-#                 self.assertEqual(expected, len(response.data))
-#             else:
-#                 self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
+from django.db.models import Q
+from rest_framework import status
+from server.models import User, Desk, Card, LearningProgress
+from server.tests.mixins.decorators import  active_users, banned_users, no_auth_user
+from server.tests.mixins.taboo_methods import TabooListMixin, TabooRetrieveMixin, TabooCreateMixin, TabooDeleteMixin, \
+    TabooBannedTotalMixin, TabooNoAuthTotalMixin
+from server.tests.mixins.abstract import BaseViewsTest
+
+
+
+def serialize(obj, fields):
+    return {key: getattr(obj, key) for key in fields}
+
+
+class UsersViewTest(
+    BaseViewsTest,
+    TabooListMixin,
+    TabooRetrieveMixin,
+    TabooCreateMixin,
+    TabooDeleteMixin
+):
+    def setUp(self):
+        self.uri = 'users'
+        self.model = User
+
+    def get_self_response(self, user):
+        return user.get(self.uri + 'self/')
+
+    @active_users
+    def test_self(self, user):
+        response = self.get_self_response(user)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        expected_data = serialize(
+            User.objects.get(id=user.id),
+            ('id', 'username', 'auto_translate', 'auto_sound', 'learning_speed', 'learning_mode', 'sound_on')
+        )
+        self.assertEqual(response.data, expected_data)
+
+
+class DesksViewTest(BaseViewsTest, TabooNoAuthTotalMixin, TabooBannedTotalMixin, TabooRetrieveMixin, TabooListMixin):
+    def setUp(self):
+        self.uri = 'desks'
+        self.model = Desk
+
+    def get_download_available_desks(self, user):
+        return user.get(self.uri + 'download_available_desks/')
+
+    @active_users
+    def test_download_available_desks_for_active(self, user):
+        response = self.get_download_available_desks(user)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        qs = Desk.objects.filter(Q(owner_id=user.id) | Q(users__id=user.id, access=Desk.AccessChoice.PUBLIC))
+        self.assertEqual(len(response.data), qs.count())
+        if qs.count():
+            interface = {'id': int, 'name': str, 'description': str, 'access': str, 'owner': int, 'is_learning': int,
+                         'cards_in_desk': int, 'cards_studied': int}
+            self.check_interface(response.data[0], interface)
+
+    @banned_users
+    def test_download_available_desks_for_banned(self, user):
+        response = self.get_download_available_desks(user)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    @no_auth_user
+    def test_download_available_desks_for_no_auth(self, user):
+        response = self.get_download_available_desks(user)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def get_find(self, user, args=None):
+        return user.get(self.uri + 'find/', args)
+
+    @active_users
+    def test_find_empty_for_active(self, user):
+        response = self.get_find(user, {'text': ''})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    @active_users
+    def test_find_for_active(self, user):
+        for d in Desk.objects.all():
+            text = d.name[1: -1]
+            response = self.get_find(user, {'text': text})
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            # доработать
+            # qs = Desk.objects.filter(
+            #     Q(name__icontains=text) & (Q(owner_id=user.id) | Q(access=Desk.AccessChoice.PUBLIC))
+            # ).distinct()
+            # self.assertEqual(len(response.data), qs.count())
+
+    @banned_users
+    def test_find_for_banned(self, user):
+        response = self.get_find(user)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    @no_auth_user
+    def test_find_for_no_auth(self, user):
+        response = self.get_find(user)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class CardsViewTest(BaseViewsTest, TabooNoAuthTotalMixin, TabooBannedTotalMixin, TabooRetrieveMixin, TabooListMixin):
+    def setUp(self):
+        self.model = Card
+        self.uri = 'cards'
+
+
+class LearningProgressViewTest(
+    BaseViewsTest,
+    TabooNoAuthTotalMixin,
+    TabooBannedTotalMixin,
+    TabooRetrieveMixin,
+    TabooListMixin
+):
+    def setUp(self):
+        self.model = LearningProgress
+        self.uri = 'learningprogress'
+

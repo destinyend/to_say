@@ -9,7 +9,7 @@ from to_say import settings
 
 router = DefaultRouter()
 for name in views.__dict__:
-    if name.endswith('View') and name not in ('APIView', 'ViewSet', 'TokenObtainPairView'):
+    if name.endswith('View') and name not in ('APIView', 'ViewSet', 'TokenObtainPairView', 'GenericAPIView'):
         url = name.replace('View', '').lower()
         router.register(url, getattr(views, name), basename=url)
 

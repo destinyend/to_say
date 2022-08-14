@@ -17,3 +17,7 @@ android
 ios
 problems_client.txt
 problems_server.txt
+deploy.py
+test.sql
+test_data.json
+
