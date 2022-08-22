@@ -13,6 +13,18 @@ from server.validators import UsernameValidator
 from rest_framework.mixins import *
 
 
+def create_view(model_name):
+    """Метакласс для создания простых представлений"""
+
+    serializer_class = globals()[f'{model_name}Serializer']
+    queryset = globals()[model_name].objects.all()
+    return type(
+        f'{model_name}sView',
+        (GenericViewSet,),
+        {'queryset': queryset, 'serializer_class': serializer_class}
+    )
+
+
 class UserLogin(TokenObtainPairView):
     permission_classes = (PasswordTimeValid,)
     serializer_class = UserLoginSerializer
@@ -20,7 +32,7 @@ class UserLogin(TokenObtainPairView):
 
 class UsersView(GenericViewSet, UpdateModelMixin):
     serializer_class = UserSerializer
-    queryset = User.objects.exclude(status=User.StatusChoice.BANNED).only(*UserSerializer.Meta.fields)
+    queryset = User.objects.exclude(status=User.StatusChoice.BANNED)
 
     def get_permissions(self):
         if self.action in ('request_password',):
@@ -124,7 +136,6 @@ class DesksView(GenericViewSet, CreateModelMixin, DestroyModelMixin, UpdateModel
         if not text:
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-
         sql = '''
         SELECT DISTINCT
             desks.id AS id ,
@@ -178,7 +189,7 @@ class DesksView(GenericViewSet, CreateModelMixin, DestroyModelMixin, UpdateModel
 
 class CardsView(GenericViewSet, CreateModelMixin, DestroyModelMixin, UpdateModelMixin):
     serializer_class = CardSerializer
-    queryset = Card.objects.all().only(*CardSerializer.Meta.fields)
+    queryset = Card.objects.all()
 
     def get_permissions(self):
         if self.request.method in SAFE_METHODS or self.action == 'create':
