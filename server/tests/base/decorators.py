@@ -1,6 +1,7 @@
-"""Декораторы методов для тестов. Позволяют выполнить серию запросов выбранного типа"""
+"""Декораторы методов для тестов. Позволяют выполнить запрос от пользователей определенного декоратором типа"""
+
 from server.models import User
-from server.tests.mixins.abstract import UserGetter
+from .base import UserGetter
 
 
 def total_users_and_none(func):
@@ -45,12 +46,8 @@ def active_users(func):
 def no_auth_and_banned_users(func):
     def wrapper(self):
         for user in UserGetter():
-            if user.status == User.StatusChoice.ACTIVE or not user.id:
+            if user.status == User.StatusChoice.BANNED or not user.id:
                 func(self, user)
     return wrapper
-
-
-
-
 
 

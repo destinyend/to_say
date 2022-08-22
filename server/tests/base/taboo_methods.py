@@ -1,8 +1,17 @@
 """Классы предоставляющие тесты для наиболее общих случаев"""
+from abc import ABC
+
 from django.test import TestCase
 from rest_framework import status
-from server.tests.mixins.abstract import AbstractMixin
-from server.tests.mixins.decorators import total_users, total_users_and_none, no_auth_user, banned_users
+from .decorators import total_users, total_users_and_none, no_auth_user, banned_users
+
+
+class AbstractMixin(ABC):
+    """Базовый класс для создания стандартных тестов"""
+    uri = None
+    model = None
+    users = None
+    obj_uri = None
 
 
 class TabooBase(AbstractMixin):
@@ -12,11 +21,11 @@ class TabooBase(AbstractMixin):
             status.HTTP_401_UNAUTHORIZED,
             status.HTTP_403_FORBIDDEN,
             status.HTTP_404_NOT_FOUND,
-            status.HTTP_405_METHOD_NOT_ALLOWED
         ))
 
 
 class TabooListMixin(TabooBase):
+    """Тест на запрет получения массива объектов любым пользователем"""
     @total_users_and_none
     def test_taboo_list(self, user):
         response = user.get(self.uri)
@@ -24,14 +33,15 @@ class TabooListMixin(TabooBase):
 
 
 class TabooRetrieveMixin(TabooBase):
+    """Тест на запрет получения объекта по id любым пользователем"""
     @total_users
     def test_taboo_retrieve(self, user):
-        object_id = self.get_object_id()
-        response = user.get(self.uri + f'/{object_id}')
+        response = user.get(self.obj_uri)
         self.check(response)
 
 
 class TabooCreateMixin(TabooBase):
+    """Тест на запрет создания объекта любым пользователем"""
     @total_users_and_none
     def test_taboo_create(self, user):
         response = user.post(self.uri)
@@ -39,18 +49,18 @@ class TabooCreateMixin(TabooBase):
 
 
 class TabooDeleteMixin(TabooBase):
+    """Тест на запрет удаления объекта любым пользователем"""
     @total_users_and_none
     def test_taboo_delete(self, user):
-        object_id = self.get_object_id()
-        response = user.delete(self.uri, f'{object_id}/')
+        response = user.delete(self.obj_uri)
         self.check(response)
 
 
 class TabooUpdateMixin(TabooBase):
+    """Тест на запрет изменения объекта любым пользователем"""
     @total_users_and_none
-    def test_taboo_delete(self, user):
-        object_id = self.get_object_id()
-        response = user.patch(self.uri, f'{object_id}/')
+    def test_taboo_update(self, user):
+        response = user.patch(self.obj_uri)
         self.check(response)
 
 
@@ -59,6 +69,7 @@ class TabooTotalMixin(TabooListMixin, TabooRetrieveMixin, TabooCreateMixin, Tabo
 
 
 class TabooNoAuthListMixin(TabooBase):
+    """Тест на запрет получения массива объектов неавторизованным пользователем"""
     @no_auth_user
     def test_taboo_no_auth_list(self, user):
         response = user.get(self.uri)
@@ -66,14 +77,15 @@ class TabooNoAuthListMixin(TabooBase):
 
 
 class TabooNoAuthRetrieveMixin(TabooBase):
+    """Тест на запрет получения объекта неавторизованным пользователем"""
     @no_auth_user
     def test_taboo_no_auth_retrieve(self, user):
-        object_id = self.get_object_id()
-        response = user.get(self.uri + f'/{object_id}')
+        response = user.get(self.obj_uri)
         self.check(response)
 
 
 class TabooNoAuthCreateMixin(TabooBase):
+    """Тест на запрет создания объекта неавторизованным пользователем"""
     @no_auth_user
     def test_taboo_no_auth_create(self, user):
         response = user.post(self.uri)
@@ -81,18 +93,18 @@ class TabooNoAuthCreateMixin(TabooBase):
 
 
 class TabooNoAuthDeleteMixin(TabooBase):
+    """Тест на запрет удаления объекта неавторизованным пользователем"""
     @no_auth_user
     def test_taboo_no_auth_delete(self, user):
-        object_id = self.get_object_id()
-        response = user.delete(self.uri, f'{object_id}/')
+        response = user.delete(self.obj_uri)
         self.check(response)
 
 
 class TabooNoAuthUpdateMixin(TabooBase):
+    """Тест на запрет изменения объекта неавторизованным пользователем"""
     @no_auth_user
-    def test_taboo_no_auth_delete(self, user):
-        object_id = self.get_object_id()
-        response = user.patch(self.uri, f'{object_id}/')
+    def test_taboo_no_auth_update(self, user):
+        response = user.patch(self.obj_uri)
         self.check(response)
 
 
@@ -107,6 +119,7 @@ class TabooNoAuthTotalMixin(
 
 
 class TabooBannedListMixin(TabooBase):
+    """Тест на запрет получения массива объектов заблокированным пользователем"""
     @banned_users
     def test_taboo_banned_list(self, user):
         response = user.get(self.uri)
@@ -114,14 +127,15 @@ class TabooBannedListMixin(TabooBase):
 
 
 class TabooBannedRetrieveMixin(TabooBase):
+    """Тест на запрет получения объекта заблокированным пользователем"""
     @banned_users
     def test_taboo_banned_retrieve(self, user):
-        object_id = self.get_object_id()
-        response = user.get(self.uri + f'/{object_id}')
+        response = user.get(self.obj_uri)
         self.check(response)
 
 
 class TabooBannedCreateMixin(TabooBase):
+    """Тест на запрет создания объекта заблокированным пользователем"""
     @banned_users
     def test_taboo_banned_create(self, user):
         response = user.post(self.uri)
@@ -129,18 +143,18 @@ class TabooBannedCreateMixin(TabooBase):
 
 
 class TabooBannedDeleteMixin(TabooBase):
+    """Тест на запрет удаления объекта заблокированным пользователем"""
     @banned_users
     def test_taboo_banned_delete(self, user):
-        object_id = self.get_object_id()
-        response = user.delete(self.uri, f'{object_id}/')
+        response = user.delete(self.obj_uri)
         self.check(response)
 
 
 class TabooBannedUpdateMixin(TabooBase):
+    """Тест на запрет изменения объекта заблокированным пользователем"""
     @banned_users
-    def test_taboo_banned_delete(self, user):
-        object_id = self.get_object_id()
-        response = user.patch(self.uri, f'{object_id}/')
+    def test_taboo_banned_update(self, user):
+        response = user.patch(self.obj_uri)
         self.check(response)
 
 
@@ -152,18 +166,3 @@ class TabooBannedTotalMixin(
     TabooBannedRetrieveMixin
 ):
     pass
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

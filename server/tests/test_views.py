@@ -1,11 +1,10 @@
 from django.db.models import Q
 from rest_framework import status
 from server.models import User, Desk, Card, LearningProgress
-from server.tests.mixins.decorators import  active_users, banned_users, no_auth_user
-from server.tests.mixins.taboo_methods import TabooListMixin, TabooRetrieveMixin, TabooCreateMixin, TabooDeleteMixin, \
-    TabooBannedTotalMixin, TabooNoAuthTotalMixin
-from server.tests.mixins.abstract import BaseViewsTest
-
+from server.tests.base.base import BaseViewsTest
+from server.tests.base.decorators import active_users, banned_users, no_auth_user
+from server.tests.base.taboo_methods import TabooListMixin, TabooRetrieveMixin, TabooCreateMixin, TabooDeleteMixin, \
+    TabooNoAuthTotalMixin, TabooBannedTotalMixin
 
 
 def serialize(obj, fields):

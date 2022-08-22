@@ -143,5 +143,6 @@ class LearningProgress(Model):
 
 
 class ApiStat(Model):
+    """Класс для сбора статистики по запросам в мидлваре"""
     request = CharField(max_length=128)
     time = FloatField()

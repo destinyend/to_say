@@ -1,11 +1,16 @@
-from abc import ABC
-
 from rest_framework.fields import SerializerMethodField
 from rest_framework.serializers import ModelSerializer
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from server.models import User, Desk, Card, LearningProgress
 import secrets
 import string
+
+
+def create_model_serializer(model_name: str) -> type:
+    """Метакласс создающий сериалайзеры по имени модели"""
+    meta = type('Meta', (object,), {'fields': '__all__', 'model': globals()[model_name]})
+    args = {'Meta': meta}
+    return type(f'{model_name}Serializer', (ModelSerializer,), args)
 
 
 class UserLoginSerializer(TokenObtainPairSerializer):
@@ -29,24 +34,13 @@ class UserSerializer(ModelSerializer):
                   'sound_on')
 
 
-class DeskSerializer(ModelSerializer):
+class DeskSerializer(create_model_serializer('Desk')):
     is_learning = SerializerMethodField()
 
     def get_is_learning(self, desk):
         return Desk.objects.filter(id=desk.id, users__id=self.context.get('user_id')).exists()
 
-    class Meta:
-        model = Desk
-        fields = ('id', 'name', 'description', 'access', 'owner', 'is_learning')
 
+CardSerializer = create_model_serializer('Card')
 
-class CardSerializer(ModelSerializer):
-    class Meta:
-        model = Card
-        fields = ('id', 'side_one', 'side_two', 'desk', 'media')
-
-
-class LearningProgressSerializer(ModelSerializer):
-    class Meta:
-        model = LearningProgress
-        fields = ('id', 'next_show_in', 'step')
+LearningProgressSerializer = create_model_serializer('LearningProgress')

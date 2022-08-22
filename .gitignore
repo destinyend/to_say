@@ -1,6 +1,4 @@
 .idea
-client/node_modules
-/venv/
 **/**/__pycache__/
 **/__pycache__/
 */__pycache__/
@@ -20,4 +18,8 @@ problems_server.txt
 deploy.py
 test.sql
 test_data.json
-
+.env.prod
+initial.json
+initial.sql
+to_say.iml
+client/node_modules

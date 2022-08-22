@@ -1,3 +1,6 @@
+from django.db.models import Q
+from django.db.models.expressions import Subquery
+from django.db.models.query import Prefetch
 from google_trans_new import google_translator
 from rest_framework.decorators import action
 from rest_framework.viewsets import GenericViewSet, ViewSet
@@ -122,22 +125,23 @@ class DesksView(GenericViewSet, CreateModelMixin, DestroyModelMixin, UpdateModel
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
-        #  доработать, убрать потенциальную sqli, тест падает
         sql = '''
-        SELECT DISTINCT 
-        desks.id AS id , 
-        name, 
-        description, 
-        access, 
-        owner_id AS owner, 
-        IF(du.id, 1, 0) AS is_learning, 
-        (SELECT COUNT(*) FROM cards WHERE desk_id=desks.id) AS cards_in_desk 
-        FROM desks 
-        LEFT JOIN desks_users du ON desks.id = du.desk_id 
-        WHERE name LIKE %s AND (owner_id=%s OR access=%s) 
+        SELECT DISTINCT
+            desks.id AS id ,
+            name,
+            description,
+            access,
+            owner_id AS owner,
+            EXISTS(SELECT id FROM desks_users WHERE user_id=%s AND desk_id=desks.id) AS is_learning,
+            (SELECT COUNT(*) FROM cards WHERE desk_id=desks.id) AS cards_in_desk
+        FROM desks
+
+        WHERE name ILIKE %s AND (owner_id=%s OR access='public')
         ORDER BY name LIMIT 100
         '''
-        data = db(sql, ('%' + text + '%', request.user.id, Desk.AccessChoice.PUBLIC))
+
+        data = db(sql, (request.user.id, f'%{text}%', request.user.id))
+
         return Response(data, status=status.HTTP_200_OK)
 
     @action(['PATCH'], detail=True)
@@ -208,12 +212,12 @@ class CardsView(GenericViewSet, CreateModelMixin, DestroyModelMixin, UpdateModel
         desk_id AS desk, 
         l.id AS lp_id, 
         l.step AS step, 
-        DATE_FORMAT(l.next_show_in, "%%Y-%%m-%%d %%H:%%i:%%S") AS next_show_in, 
+        pg_catalog.TO_CHAR(l.next_show_in, 'YYYY-MM-DD HH24:MI:SS') AS next_show_in, 
         media 
         FROM cards LEFT JOIN learning_progress l on cards.id = l.card_id 
-        WHERE desk_id IN ({desk_ides}) 
+        WHERE desk_id IN (%s) 
         '''
-        data = db(sql)
+        data = db(sql, (desk_ides,))
 
         return Response(
             data,
